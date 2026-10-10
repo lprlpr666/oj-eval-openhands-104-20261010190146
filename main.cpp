@@ -8,47 +8,39 @@ int main() {
     if(!(cin >> n >> m)) return 0;
     vector<vector<int>> grid(m, vector<int>(n));
     pair<int,int> start{-1,-1}, home{-1,-1};
-    vector<pair<int,int>> umbrellas;
     for(int i=0;i<m;++i){
         for(int j=0;j<n;++j){
             cin >> grid[i][j];
             if(grid[i][j]==2) start={i,j};
             else if(grid[i][j]==3) home={i,j};
-            else if(grid[i][j]==4) umbrellas.emplace_back(i,j);
         }
     }
+    // BFS with state: has umbrella (0/1)
     const int INF = -1;
-    auto bfs = [&](pair<int,int> src){
-        vector<vector<int>> dist(m, vector<int>(n, INF));
-        queue<pair<int,int>> q;
-        if(grid[src.first][src.second]==1) return dist; // blocked start shouldn't happen
-        dist[src.first][src.second]=0;
-        q.push(src);
-        int dirs[4][2]={{1,0},{-1,0},{0,1},{0,-1}};
-        while(!q.empty()){
-            auto [x,y]=q.front(); q.pop();
-            for(auto &d:dirs){
-                int nx=x+d[0], ny=y+d[1];
-                if(nx<0||nx>=m||ny<0||ny>=n) continue;
-                if(grid[nx][ny]==1) continue; // blocked
-                if(dist[nx][ny]!=INF) continue;
-                dist[nx][ny]=dist[x][y]+1;
-                q.emplace(nx,ny);
+    vector<vector<array<int,2>>> dist(m, vector<array<int,2>>(n, {INF, INF}));
+    queue<tuple<int,int,int>> q; // x, y, hasUmbrella
+    int sx=start.first, sy=start.second;
+    int initUmbrella = (grid[sx][sy]==4) ? 1 : 0;
+    dist[sx][sy][initUmbrella]=0;
+    q.emplace(sx,sy,initUmbrella);
+    int dirs[4][2]={{1,0},{-1,0},{0,1},{0,-1}};
+    while(!q.empty()){
+        auto [x,y,has]=q.front(); q.pop();
+        for(auto &d:dirs){
+            int nx=x+d[0], ny=y+d[1];
+            if(nx<0||nx>=m||ny<0||ny>=n) continue;
+            if(grid[nx][ny]==1) continue; // blocked
+            int nhas=has;
+            if(grid[nx][ny]==4) nhas=1;
+            if(dist[nx][ny][nhas]==INF){
+                dist[nx][ny][nhas]=dist[x][y][has]+1;
+                q.emplace(nx,ny,nhas);
             }
         }
-        return dist;
-    };
-    auto distStart = bfs(start);
-    auto distHome = bfs(home);
-    long long ans = LLONG_MAX;
-    for(auto &p: umbrellas){
-        int d1 = distStart[p.first][p.second];
-        int d2 = distHome[p.first][p.second];
-        if(d1!=INF && d2!=INF){
-            ans = min(ans, (long long)d1 + d2);
-        }
     }
-    if(ans==LLONG_MAX) cout << -1 << "\n";
-    else cout << ans << "\n";
+    int hx=home.first, hy=home.second;
+    int answer = dist[hx][hy][1]; // must have visited umbrella
+    if(answer==INF) cout << -1 << "\n";
+    else cout << answer << "\n";
     return 0;
 }
